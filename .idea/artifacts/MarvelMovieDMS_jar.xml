@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="MarvelMovieDMS:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/MarvelMovieDMS_jar</output-path>
+    <root id="archive" name="MarvelMovieDMS.jar">
+      <element id="module-output" name="MarvelMovieDMS" />
+    </root>
+  </artifact>
+</component>
