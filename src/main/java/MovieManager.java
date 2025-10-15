@@ -8,39 +8,31 @@ import java.nio.charset.StandardCharsets;
 /**
  * MovieManager.java
  * Manages the collection of MarvelMovie objects and implements all CRUD operations,
- * input validation, and the custom action. This represents the Business Logic Layer.
- *
- * The loadBatchData method reads from a user-provided file path using FileReader.
+ * input validation, and the custom action. Refactored to expose methods that accept
+ * parameters and return results for easier unit testing.
  */
 public class MovieManager {
-    // In-memory storage for Phase 1
     private List<MarvelMovie> movies;
 
-    /**
-     * Constructor initializes the movie list.
-     */
     public MovieManager() {
         this.movies = new ArrayList<>();
     }
 
-    // --- R: Read/Display Operation (Rubric 3) ---
-
-    /**
-     * Returns the list of all movies in the system.
-     * @return List of MarvelMovie objects.
-     */
+    // --- R: Read/Display Operation ---
     public List<MarvelMovie> getMovies() {
-        return new ArrayList<>(this.movies); // Return a copy for immutability
+        return new ArrayList<>(this.movies);
     }
 
-    // --- C: Create Data (Manual) (Rubric 4) ---
-
+    // --- C: Create Data (object) ---
     /**
-     * Adds a single, validated movie object to the collection.
-     * @param movie The MarvelMovie object to add.
-     * @return boolean true if the movie was added, false if a movie with the same title already exists.
+     * Adds a MarvelMovie object if title is unique.
+     * @param movie the MarvelMovie object
+     * @return true if added, false if duplicate or invalid
      */
     public boolean addMovie(MarvelMovie movie) {
+        if (movie == null || movie.getTitle() == null || movie.getTitle().isBlank()) {
+            return false;
+        }
         if (findMovieByTitle(movie.getTitle()) != null) {
             return false;
         }
@@ -48,13 +40,18 @@ public class MovieManager {
         return true;
     }
 
-    // --- C: Create Data (Batch/Text File) (Rubric 2) ---
+    // --- C: Create Data (params) - easier for tests ---
+    public boolean addMovie(String title, String releaseDate, int phase, String director, int runningTimeMin, double imdbRating) {
+        if (title == null || title.isBlank()) return false;
+        if (director == null || director.isBlank()) return false;
+        if (!releaseDate.matches("\\d{4}-\\d{2}-\\d{2}")) return false;
+        if (phase <= 0 || runningTimeMin <= 0 || imdbRating < 1.0 || imdbRating > 10.0) return false;
 
-    /**
-     * Reads data from a user-provided file path using FileReader.
-     * @param filePath The path to the text file containing movie data.
-     * @return String detailing the result (success/failure count).
-     */
+        MarvelMovie movie = new MarvelMovie(title.trim(), releaseDate.trim(), phase, director.trim(), runningTimeMin, imdbRating);
+        return addMovie(movie);
+    }
+
+    // --- C: Create Data (Batch/Text File) ---
     public String loadBatchData(String filePath) {
         int addedCount = 0;
         int failedCount = 0;
@@ -112,8 +109,12 @@ public class MovieManager {
         return String.format("Batch Load Complete: %d added, %d failed.", addedCount, failedCount);
     }
 
-    // --- D: Remove Data (Rubric 5) ---
-
+    // --- D: Remove Data ---
+    /**
+     * Remove movie by title.
+     * @param title title to remove
+     * @return true if removed, false otherwise
+     */
     public boolean removeMovie(String title) {
         MarvelMovie movieToRemove = findMovieByTitle(title);
         if (movieToRemove != null) {
@@ -123,9 +124,9 @@ public class MovieManager {
         return false;
     }
 
-    // --- U: Update Data (Rubric 6) ---
-
+    // --- U: Update Data ---
     public MarvelMovie findMovieByTitle(String title) {
+        if (title == null) return null;
         String searchTitle = title.trim().toLowerCase();
         for (MarvelMovie movie : this.movies) {
             if (movie.getTitle().toLowerCase().equals(searchTitle)) {
@@ -135,34 +136,73 @@ public class MovieManager {
         return null;
     }
 
+    /**
+     * Updates a field on a given MarvelMovie. Returns true if update successful.
+     * @param movie movie object
+     * @param field field name (title, releaseDate, phase, director, runningTimeMin, imdbRating)
+     * @param value new value (type must match)
+     * @return true if updated, false if invalid field or cast error
+     */
     public boolean updateMovieField(MarvelMovie movie, String field, Object value) {
-        switch (field.toLowerCase()) {
-            case "title":
-                movie.setTitle((String) value);
-                break;
-            case "releasedate":
-                movie.setReleaseDate((String) value);
-                break;
-            case "phase":
-                movie.setPhase((int) value);
-                break;
-            case "director":
-                movie.setDirector((String) value);
-                break;
-            case "runningtimemin":
-                movie.setRunningTimeMin((int) value);
-                break;
-            case "imdbrating":
-                movie.setImdbRating((double) value);
-                break;
-            default:
-                return false;
+        if (movie == null || field == null) return false;
+        try {
+            switch (field.toLowerCase()) {
+                case "title":
+                    String t = (String) value;
+                    if (t == null || t.isBlank()) return false;
+                    // ensure new title doesn't conflict with existing movie (unless same movie)
+                    MarvelMovie other = findMovieByTitle(t);
+                    if (other != null && other != movie) return false;
+                    movie.setTitle(t);
+                    break;
+                case "releasedate":
+                    String d = (String) value;
+                    if (d == null || !d.matches("\\d{4}-\\d{2}-\\d{2}")) return false;
+                    movie.setReleaseDate(d);
+                    break;
+                case "phase":
+                    int p = (int) value;
+                    if (p <= 0) return false;
+                    movie.setPhase(p);
+                    break;
+                case "director":
+                    String dir = (String) value;
+                    if (dir == null || dir.isBlank()) return false;
+                    movie.setDirector(dir);
+                    break;
+                case "runningtimemin":
+                    int rt = (int) value;
+                    if (rt <= 0) return false;
+                    movie.setRunningTimeMin(rt);
+                    break;
+                case "imdbrating":
+                    double r = (double) value;
+                    if (r < 1.0 || r > 10.0) return false;
+                    movie.setImdbRating(r);
+                    break;
+                default:
+                    return false;
+            }
+            return true;
+        } catch (ClassCastException ex) {
+            return false;
         }
-        return true;
     }
 
-    // --- Custom Action (Rubric 7) ---
+    /**
+     * Update movie by title. This is convenient for tests and CLI calls.
+     * @param title existing title
+     * @param field field to update
+     * @param value new value
+     * @return true if updated
+     */
+    public boolean updateMovieByTitle(String title, String field, Object value) {
+        MarvelMovie m = findMovieByTitle(title);
+        if (m == null) return false;
+        return updateMovieField(m, field, value);
+    }
 
+    // --- Custom Action ---
     public double calculateAverageRating(int phase) {
         if (phase <= 0) {
             return 0.0;
@@ -184,5 +224,9 @@ public class MovieManager {
 
         return totalRating / movieCount;
     }
-}
 
+    // Utility: clear all (helpful for tests)
+    public void clearAll() {
+        this.movies.clear();
+    }
+}
