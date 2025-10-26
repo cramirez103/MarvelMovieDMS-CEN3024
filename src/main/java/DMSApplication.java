@@ -1,13 +1,11 @@
-// Christopher Ramirez, CEN-3024, 10/9/2025
-
 import java.util.InputMismatchException;
-import java.util.Scanner;
 import java.util.List;
+import java.util.Scanner;
 
 /**
  * DMSApplication.java
- * The main application class handling the CLI and user interaction.
- * explicitly asks the user for the file path when selecting Batch Load.
+ * Main application class handling CLI and user interaction.
+ * Added proper validation for release date and running time.
  */
 public class DMSApplication {
 
@@ -20,7 +18,7 @@ public class DMSApplication {
     }
 
     public void run() {
-        System.out.println("\n--- Marvel Movie DMS (Phase 1) Started ---");
+        System.out.println("\n--- Marvel Movie DMS (Phase 3 CLI) Started ---");
         System.out.println("System is currently empty. Please use Option 2 or 3 to load data.");
 
         boolean running = true;
@@ -29,52 +27,23 @@ public class DMSApplication {
             int choice = getValidatedIntInput("Enter your choice: ", 0, 6);
 
             switch (choice) {
-                case 1:
-                    displayData();
-                    break;
-                case 2:
-                    manualCreate();
-                    break;
-                case 3:
-                    loadBatchDataFromPath();
-                    break;
-                case 4:
-                    updateRecord();
-                    break;
-                case 5:
-                    removeRecord();
-                    break;
-                case 6:
-                    runCustomAction();
-                    break;
-                case 0:
+                case 1 -> displayData();
+                case 2 -> manualCreate();
+                case 3 -> loadBatchDataFromPath();
+                case 4 -> updateRecord();
+                case 5 -> removeRecord();
+                case 6 -> runCustomAction();
+                case 0 -> {
                     running = false;
                     System.out.println("\nExiting Marvel Movie DMS. Goodbye!");
-                    break;
+                }
             }
         }
         scanner.close();
     }
 
-    /**
-     * Prompts user for a file path and loads data using MovieManager.
-     */
-    private void loadBatchDataFromPath() {
-        System.out.println("\n--- Batch Load Data ---");
-        System.out.print("Please enter the full file path to your batch data file: ");
-        String filePath = scanner.nextLine().trim();
-
-        if (filePath.isEmpty()) {
-            System.out.println("ERROR: File path cannot be empty. Returning to main menu.");
-            return;
-        }
-
-        String result = manager.loadBatchData(filePath);
-        System.out.println(result);
-    }
-
     private void displayMenu() {
-        System.out.println("\n--- Marvel Movie DMS Menu (Phase 1) ---");
+        System.out.println("\n--- Marvel Movie DMS Menu ---");
         System.out.println("1. Display All Data (Read)");
         System.out.println("2. Create Data Manually");
         System.out.println("3. Batch Load Data (Provide File Path)");
@@ -82,10 +51,9 @@ public class DMSApplication {
         System.out.println("5. Remove Data");
         System.out.println("6. Run Custom Action (Avg Rating by Phase)");
         System.out.println("0. Exit Program");
-        System.out.println("---------------------------------------");
     }
 
-    // --- Input Validation Helpers ---
+    // ------------------ Input Validation Helpers ------------------
 
     private int getValidatedIntInput(String prompt, int min, int max) {
         while (true) {
@@ -93,11 +61,10 @@ public class DMSApplication {
             try {
                 int value = scanner.nextInt();
                 if (value >= min && (max == -1 || value <= max)) {
-                    scanner.nextLine();
+                    scanner.nextLine(); // consume leftover newline
                     return value;
-                } else {
-                    System.out.printf("Error: Input must be between %d and %s.\n", min, (max == -1 ? "infinity" : max));
                 }
+                System.out.printf("Error: Input must be between %d and %s.\n", min, (max == -1 ? "infinity" : max));
             } catch (InputMismatchException e) {
                 System.out.println("Error: Please enter a whole number.");
                 scanner.nextLine();
@@ -111,13 +78,12 @@ public class DMSApplication {
             try {
                 double value = scanner.nextDouble();
                 if (value >= min && value <= max) {
-                    scanner.nextLine();
+                    scanner.nextLine(); // consume leftover newline
                     return value;
-                } else {
-                    System.out.printf("Error: Input must be between %.1f and %.1f.\n", min, max);
                 }
+                System.out.printf("Error: Input must be between %.1f and %.1f.\n", min, max);
             } catch (InputMismatchException e) {
-                System.out.println("Error: Please enter a valid number (e.g., 7.5).");
+                System.out.println("Error: Please enter a valid number.");
                 scanner.nextLine();
             }
         }
@@ -127,38 +93,64 @@ public class DMSApplication {
         while (true) {
             System.out.print(prompt);
             String value = scanner.nextLine().trim();
-            if (!value.isEmpty()) {
-                return value;
-            } else {
-                System.out.println("Error: Input cannot be empty.");
-            }
+            if (!value.isEmpty()) return value;
+            System.out.println("Error: Input cannot be empty.");
         }
     }
 
-    // --- CRUD + Custom Action Handlers ---
+    // ------------------ Custom Validation Methods ------------------
+
+    private boolean isValidReleaseDate(String dateStr) {
+        if (dateStr == null || !dateStr.matches("\\d{4}-\\d{2}-\\d{2}")) return false;
+
+        String[] parts = dateStr.split("-");
+        int year = Integer.parseInt(parts[0]);
+        int month = Integer.parseInt(parts[1]);
+        int day = Integer.parseInt(parts[2]);
+
+        if (year < 1900 || year > 2025) return false;
+        if (month < 1 || month > 12) return false;
+
+        int[] daysInMonth = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+        // Leap year check
+        if (month == 2 && ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0))) {
+            daysInMonth[1] = 29;
+        }
+        return day >= 1 && day <= daysInMonth[month - 1];
+    }
+
+    private boolean isValidRunningTime(int minutes) {
+        return minutes >= 30 && minutes <= 300; // 30 minutes to 5 hours max
+    }
+
+    // ------------------ CRUD and Custom Actions ------------------
 
     private void manualCreate() {
         System.out.println("\n--- Enter New Movie Details ---");
 
         String title = getValidatedStringInput("Enter Title: ");
+
         String releaseDate = getValidatedStringInput("Enter Release Date (YYYY-MM-DD): ");
-        while (!releaseDate.matches("\\d{4}-\\d{2}-\\d{2}")) {
-            System.out.println("Error: Date format must be YYYY-MM-DD.");
+        while (!isValidReleaseDate(releaseDate)) {
+            System.out.println("Error: Invalid date. Must be a real date between 1900-2025.");
             releaseDate = getValidatedStringInput("Enter Release Date (YYYY-MM-DD): ");
         }
 
         int phase = getValidatedIntInput("Enter Phase (e.g., 4): ", 1, -1);
         String director = getValidatedStringInput("Enter Director: ");
-        int runningTimeMin = getValidatedIntInput("Enter Running Time (min): ", 30, -1);
+
+        int runningTimeMin = getValidatedIntInput("Enter Running Time (min): ", 1, 10000);
+        while (!isValidRunningTime(runningTimeMin)) {
+            System.out.println("Error: Running time must be between 30 and 300 minutes.");
+            runningTimeMin = getValidatedIntInput("Enter Running Time (min): ", 1, 10000);
+        }
+
         double imdbRating = getValidatedDoubleInput("Enter IMDb Rating (1.0-10.0): ", 1.0, 10.0);
 
-        MarvelMovie newMovie = new MarvelMovie(title, releaseDate, phase, director, runningTimeMin, imdbRating);
-
-        if (manager.addMovie(newMovie)) {
-            System.out.println("\nSUCCESS: Record created and added to the system:");
-            System.out.println(newMovie);
+        if (manager.addMovie(title, releaseDate, phase, director, runningTimeMin, imdbRating)) {
+            System.out.println("\nSUCCESS: Record created and added to the system.");
         } else {
-            System.out.println("\nERROR: A movie with the title '" + title + "' already exists. Record NOT added.");
+            System.out.println("\nERROR: Could not add movie (duplicate or invalid data).");
         }
     }
 
@@ -169,96 +161,87 @@ public class DMSApplication {
             System.out.println("The system is empty.");
             return;
         }
-
-        for (int i = 0; i < movies.size(); i++) {
-            System.out.println("Record #" + (i + 1) + ":");
-            System.out.println(movies.get(i).toString());
-            System.out.println("---------------------------------------");
+        for (MarvelMovie movie : movies) {
+            System.out.println(movie);
+            System.out.println("--------------------------------");
         }
     }
 
     private void removeRecord() {
-        System.out.println("\n--- Remove Record ---");
         String title = getValidatedStringInput("Enter the title of the movie to remove: ");
-
         if (manager.removeMovie(title)) {
-            System.out.println("\nSUCCESS: The movie '" + title + "' has been removed.");
+            System.out.println("SUCCESS: Movie removed.");
         } else {
-            System.out.println("\nERROR: Movie with title '" + title + "' was not found. Nothing removed.");
+            System.out.println("ERROR: Movie not found.");
         }
     }
 
     private void updateRecord() {
-        System.out.println("\n--- Update Record ---");
         String title = getValidatedStringInput("Enter the title of the movie to update: ");
-
-        MarvelMovie movieToUpdate = manager.findMovieByTitle(title);
-        if (movieToUpdate == null) {
-            System.out.println("\nERROR: Movie with title '" + title + "' was not found. Cannot update.");
+        MarvelMovie movie = manager.findMovieByTitle(title);
+        if (movie == null) {
+            System.out.println("ERROR: Movie not found.");
             return;
         }
 
-        System.out.println("\nCurrently updating: " + movieToUpdate.getTitle());
         System.out.println("Available fields: title, releaseDate, phase, director, runningTimeMin, imdbRating");
-
         String field = getValidatedStringInput("Enter the field name to update: ").toLowerCase();
-        Object newValue = null;
+        Object newValue;
 
-        try {
-            switch (field) {
-                case "title":
-                case "director":
-                    newValue = getValidatedStringInput("Enter new " + field + ": ");
-                    break;
-                case "releasedate":
-                    String date = getValidatedStringInput("Enter new Release Date (YYYY-MM-DD): ");
-                    while (!date.matches("\\d{4}-\\d{2}-\\d{2}")) {
-                        System.out.println("Error: Date format must be YYYY-MM-DD.");
-                        date = getValidatedStringInput("Enter new Release Date (YYYY-MM-DD): ");
-                    }
-                    newValue = date;
-                    break;
-                case "phase":
-                    newValue = getValidatedIntInput("Enter new Phase: ", 1, -1);
-                    break;
-                case "runningtimemin":
-                    newValue = getValidatedIntInput("Enter new Running Time (min): ", 30, -1);
-                    break;
-                case "imdbrating":
-                    newValue = getValidatedDoubleInput("Enter new IMDb Rating (1.0-10.0): ", 1.0, 10.0);
-                    break;
-                default:
-                    System.out.println("\nERROR: Invalid field name entered. Update aborted.");
-                    return;
+        switch (field) {
+            case "title", "director" -> newValue = getValidatedStringInput("Enter new " + field + ": ");
+            case "releasedate" -> {
+                String date = getValidatedStringInput("Enter new Release Date (YYYY-MM-DD): ");
+                while (!isValidReleaseDate(date)) {
+                    System.out.println("Error: Invalid date. Must be a real date between 1900-2025.");
+                    date = getValidatedStringInput("Enter new Release Date (YYYY-MM-DD): ");
+                }
+                newValue = date;
             }
-
-            if (manager.updateMovieField(movieToUpdate, field, newValue)) {
-                System.out.println("\nSUCCESS: '" + movieToUpdate.getTitle() + "' " + field + " updated.");
-                System.out.println("New record data:\n" + movieToUpdate.toString());
+            case "phase" -> newValue = getValidatedIntInput("Enter new Phase: ", 1, -1);
+            case "runningtimemin" -> {
+                int runtime = getValidatedIntInput("Enter new Running Time (min): ", 1, 10000);
+                while (!isValidRunningTime(runtime)) {
+                    System.out.println("Error: Running time must be between 30 and 300 minutes.");
+                    runtime = getValidatedIntInput("Enter new Running Time (min): ", 1, 10000);
+                }
+                newValue = runtime;
             }
+            case "imdbrating" -> newValue = getValidatedDoubleInput("Enter new IMDb Rating (1.0-10.0): ", 1.0, 10.0);
+            default -> {
+                System.out.println("Invalid field name. Update aborted.");
+                return;
+            }
+        }
 
-        } catch (Exception e) {
-            System.out.println("An unexpected error occurred during update validation. Update failed.");
+        if (manager.updateMovieField(movie, field, newValue)) {
+            System.out.println("SUCCESS: Update complete.");
+        } else {
+            System.out.println("ERROR: Update failed.");
         }
     }
 
     private void runCustomAction() {
-        System.out.println("\n--- Custom Action: Calculate Average IMDb Rating ---");
-        int phase = getValidatedIntInput("Enter the MCU Phase number to analyze: ", 1, -1);
-
+        int phase = getValidatedIntInput("Enter MCU Phase number to analyze: ", 1, -1);
         double average = manager.calculateAverageRating(phase);
-
         if (average > 0.0) {
-            System.out.printf("\nRESULT: The average IMDb rating for all movies in Phase %d is: %.2f\n", phase, average);
-        } else if (manager.getMovies().isEmpty()) {
-            System.out.println("\nNOTICE: The system is empty, so no calculation could be performed.");
+            System.out.printf("Average IMDb rating for Phase %d: %.2f\n", phase, average);
         } else {
-            System.out.printf("\nNOTICE: No movies found in Phase %d to calculate an average.\n", phase);
+            System.out.println("No movies found in this phase.");
         }
     }
 
+    private void loadBatchDataFromPath() {
+        System.out.print("Enter full path for batch data file: ");
+        String path = scanner.nextLine().trim();
+        if (path.isEmpty()) {
+            System.out.println("ERROR: File path cannot be empty.");
+            return;
+        }
+        System.out.println(manager.loadBatchData(path));
+    }
+
     public static void main(String[] args) {
-        DMSApplication app = new DMSApplication();
-        app.run();
+        new DMSApplication().run();
     }
 }
