@@ -3,6 +3,7 @@
     <output-path>$PROJECT_DIR$/out/artifacts/MarvelMovieDMS_jar</output-path>
     <root id="archive" name="MarvelMovieDMS.jar">
       <element id="module-output" name="MarvelMovieDMS" />
+      <element id="library" level="project" name="sqlite-jdbc-3.40.1.0" />
     </root>
   </artifact>
 </component>
