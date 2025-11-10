@@ -6,6 +6,7 @@ import java.io.File;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 
 /**
  * DMSGui - Swing GUI for MovieManager.
@@ -559,15 +560,27 @@ public class DMSGui extends JFrame {
     }
 
     private void refreshTable() {
+        // Clear all previous rows
         tableModel.setRowCount(0);
-        if (manager != null && manager.getMovies() != null) {
-            for (MarvelMovie m : manager.getMovies()) {
+
+        // Manager's getMovies() method now queries the database and returns
+        // a List of MarvelMovie objects (or an empty list on failure/no results).
+        List<MarvelMovie> currentMovies = manager.getMovies();
+
+        if (currentMovies != null && !currentMovies.isEmpty()) {
+            for (MarvelMovie m : currentMovies) {
+                // Populate the table model with data retrieved from the database
                 tableModel.addRow(new Object[]{
-                        m.getTitle(), m.getReleaseDate(), m.getPhase(),
-                        m.getDirector(), m.getRunningTimeMin(), m.getImdbRating()
+                        m.getTitle(),
+                        m.getReleaseDate(),
+                        m.getPhase(),
+                        m.getDirector(),
+                        m.getRunningTimeMin(),
+                        m.getImdbRating()
                 });
             }
         }
+        // If currentMovies is empty, the table is cleared, which is the correct behavior.
     }
 
     private void clearInputFields() {
@@ -589,12 +602,4 @@ public class DMSGui extends JFrame {
         JOptionPane.showMessageDialog(this, msg, "MCU DATA SUCCESS", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    // ---------- main ----------
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            // LAUNCH THE INTRO SCREEN FIRST
-            IntroScreen intro = new IntroScreen();
-            intro.setVisible(true);
-        });
-    }
 }

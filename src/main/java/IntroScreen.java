@@ -1,6 +1,8 @@
 import javax.swing.*;
 import java.awt.*;
 import javax.swing.border.EmptyBorder;
+import java.io.File; // Needed for path validation
+import java.sql.Connection; // Needed for connection test
 
 /**
  * IntroScreen - Simple, direct Welcome Screen for DMSGui.
@@ -63,11 +65,15 @@ public class IntroScreen extends JFrame {
 
         // Action Listener
         beginButton.addActionListener(e -> {
+            // NOTE: The database path MUST be set BEFORE this button is enabled/clicked.
+            // For now, we assume the static main() has already confirmed the setup.
+
             // 1. Dispose the intro screen
             dispose();
 
-            // 2. Launch the main application
+            // 2. Launch the main application GUI
             SwingUtilities.invokeLater(() -> {
+                // Since the DB path is set in main, DMSGui can now be created.
                 DMSGui gui = new DMSGui();
                 gui.setVisible(true);
             });
@@ -75,5 +81,62 @@ public class IntroScreen extends JFrame {
 
         southPanel.add(beginButton);
         add(southPanel, BorderLayout.SOUTH);
+    }
+
+    // --- NEW STATIC MAIN METHOD TO HANDLE DATABASE SETUP ---
+    public static void main(String[] args) {
+        String dbFilePath = null;
+        boolean pathValidated = false;
+
+        // Loop until a valid path is provided or the user cancels
+        while (!pathValidated) {
+            // 1. Prompt the user for the database file path
+            dbFilePath = JOptionPane.showInputDialog(
+                    null,
+                    "<html><b>Database Connection Required:</b><br>Please enter the ABSOLUTE path to your SQLite database file (e.g., C:\\sqlite\\myproject.db):</html>",
+                    "Database Connection Setup",
+                    JOptionPane.QUESTION_MESSAGE
+            );
+
+            // Check if the user clicked 'Cancel' or closed the dialog
+            if (dbFilePath == null) {
+                JOptionPane.showMessageDialog(null, "Application setup canceled by user. Exiting.", "Exiting", JOptionPane.INFORMATION_MESSAGE);
+                System.exit(0);
+            }
+
+            // 2. Validate the path exists
+            File dbFile = new File(dbFilePath);
+            if (dbFile.exists() && dbFile.isFile()) {
+                pathValidated = true;
+            } else {
+                // Show an error message and loop again
+                JOptionPane.showMessageDialog(
+                        null,
+                        "Error: The specified file path is invalid or the file does not exist.\nEnsure the path is absolute and the file is present.",
+                        "Path Error",
+                        JOptionPane.ERROR_MESSAGE
+                );
+            }
+        }
+
+        // 3. Set the path in the JDBC helper
+        JDBC.setDatabasePath(dbFilePath);
+
+        // 4. Test the connection immediately for robustness
+        Connection con = JDBC.openConnection();
+        if (con != null) {
+            JDBC.closeConnection(con);
+            System.out.println("Database connection test successful.");
+
+            // 5. If connection is successful, launch the UI thread
+            SwingUtilities.invokeLater(() -> {
+                IntroScreen intro = new IntroScreen();
+                intro.setVisible(true);
+            });
+        } else {
+            // Connection failed even with a valid file path (e.g., DB file is corrupt or driver issue)
+            JOptionPane.showMessageDialog(null, "FATAL: Could not establish a database connection after setup. Check your SQLite JAR or file permissions. Exiting.", "Connection Failure", JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+        }
     }
 }
