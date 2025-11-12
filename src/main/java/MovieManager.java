@@ -5,6 +5,17 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
+/**
+ * The Data Management System (DMS) Controller for Marvel movies.
+ * This class manages all CRUD (Create, Read, Update, Delete) operations
+ * by executing SQL queries against the persistent SQLite database via {@link JDBC}.
+ *
+ * <p>Role in System: Business Logic and Data Access Layer (Controller). It is the only class that
+ * interacts directly with the database via the JDBC utility.</p>
+ *
+ * @author [Ramirez,Christopher]
+ * @version 1.0
+ */
 public class MovieManager {
     // We no longer store the list in memory.
     // private List<MarvelMovie> movies; <-- REMOVED THIS
@@ -18,14 +29,20 @@ public class MovieManager {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
 
+    /**
+     * Constructs the MovieManager.
+     * It prepares the controller to interact with the database; no initialization of an in-memory list is performed.
+     */
     public MovieManager() {
         // The MovieManager no longer initializes an in-memory list.
         // It's ready to interact with the database set up by IntroScreen.main().
     }
 
     /**
-     * READ: Fetches all movie records from the database.
-     * @return A list of MarvelMovie objects retrieved from the database.
+     * Fetches all movie records from the database.
+     * The results are ordered alphabetically by title.
+     *
+     * @return A {@link java.util.List} of {@link MarvelMovie} objects retrieved from the database. Returns an empty list if the connection fails.
      */
     public List<MarvelMovie> getMovies() {
         List<MarvelMovie> movies = new ArrayList<>();
@@ -60,8 +77,11 @@ public class MovieManager {
 
     // ---------- CREATE (Using PreparedStatement for security and data integrity) ----------
     /**
-     * Adds a new movie record to the database.
-     * @return true if the movie was added, false on failure (e.g., SQL error, duplicate key).
+     * Adds a new movie record to the database using a {@link PreparedStatement}.
+     * Server-side validation is performed before the SQL execution.
+     *
+     * @param movie The {@link MarvelMovie} object containing the data to be inserted.
+     * @return true if the movie was successfully added, false on failure (e.g., failed validation, SQL error, or duplicate title).
      */
     public boolean addMovie(MarvelMovie movie) {
         if (movie == null || movie.getTitle() == null || movie.getTitle().isBlank()) return false;
@@ -102,7 +122,18 @@ public class MovieManager {
         }
     }
 
-    // Overloaded method to simplify calls from GUI
+    /**
+     * Overloaded method to construct a {@link MarvelMovie} and add it to the database.
+     * Simplifies calls from the GUI by accepting raw field values.
+     *
+     * @param title The movie's title.
+     * @param releaseDate The release date string.
+     * @param phase The MCU phase number.
+     * @param director The director's name.
+     * @param runningTimeMin The runtime in minutes.
+     * @param imdbRating The IMDb rating (1.0 - 10.0).
+     * @return true if the movie was successfully added, false otherwise.
+     */
     public boolean addMovie(String title, String releaseDate, int phase, String director, int runningTimeMin, double imdbRating) {
         if (title == null || title.isBlank() || director == null || director.isBlank()) return false;
         MarvelMovie movie = new MarvelMovie(title.trim(), releaseDate.trim(), phase, director.trim(), runningTimeMin, imdbRating);
@@ -111,8 +142,10 @@ public class MovieManager {
 
     // ---------- DELETE ----------
     /**
-     * REMOVE: Deletes a movie record from the database based on its title.
-     * @return true if a record was successfully deleted, false otherwise.
+     * Deletes a movie record from the database based on its title.
+     *
+     * @param title The title of the movie to remove.
+     * @return true if a record was successfully deleted (one or more rows affected), false otherwise.
      */
     public boolean removeMovie(String title) {
         if (title == null || title.isBlank()) return false;
@@ -136,8 +169,10 @@ public class MovieManager {
 
     // ---------- FIND (READ ONE) ----------
     /**
-     * READ: Searches the database for a movie by its title.
-     * @return The MarvelMovie object if found, otherwise null.
+     * Searches the database for a single movie by its exact title.
+     *
+     * @param title The title of the movie to search for.
+     * @return The {@link MarvelMovie} object if found, otherwise null.
      */
     public MarvelMovie findMovieByTitle(String title) {
         if (title == null || title.isBlank()) return null;
@@ -172,12 +207,14 @@ public class MovieManager {
     }
 
     // ---------- UPDATE (Refactoring Required) ----------
-    // Since the GUI logic (handleUpdate) first finds a movie, sets it to movieBeingEdited,
-    // and then calls this method, we need to pass the *original* title for the WHERE clause.
-
     /**
-     * UPDATE: Updates a single field for a movie record in the database.
-     * The movie object passed here should contain the original title to find the record, and the new value to update.
+     * Updates a single field for a movie record in the database.
+     * The record is identified using the original title stored in the passed {@code MarvelMovie} object.
+     *
+     * @param movie The movie object containing the original title (used in the WHERE clause).
+     * @param field The name of the field/column to update (e.g., "title", "phase", "director").
+     * @param value The new value for the specified field. Must match the expected SQL data type.
+     * @return true if the update was successful, false on validation failure, type mismatch, or SQL error.
      */
     public boolean updateMovieField(MarvelMovie movie, String field, Object value) {
         if (movie == null || field == null) return false;
@@ -264,12 +301,13 @@ public class MovieManager {
         }
     }
 
-    // The updateMovieByTitle method can be removed as it's not used by the GUI update flow.
-    // public boolean updateMovieByTitle(String title, String field, Object value) { ... }
-
     // ---------- CUSTOM ACTION (Aggregate Function) ----------
     /**
-     * CUSTOM ACTION: Calculates the average IMDb rating for all movies in a specific phase.
+     * Calculates the average IMDb rating for all movies belonging to a specific phase.
+     * This action is performed efficiently using the SQL {@code AVG} aggregate function.
+     *
+     * @param phase The MCU phase number to calculate the average for (must be > 0).
+     * @return The average rating as a double, or 0.0 if the connection fails or no movies are found in that phase.
      */
     public double calculateAverageRating(int phase) {
         if (phase <= 0) return 0.0;
@@ -300,6 +338,12 @@ public class MovieManager {
     }
 
     // ---------- BATCH LOAD (DISABLED/REMOVED) ----------
+    /**
+     * Handles batch data loading from a file, but is disabled in this database version.
+     *
+     * @param filePath The path to the batch data file (ignored).
+     * @return A status message indicating the load feature is disabled.
+     */
     public String loadBatchData(String filePath) {
         return "Batch Load is disabled in the database version. Use the 'ADD' function to insert movies.";
     }
@@ -328,7 +372,7 @@ public class MovieManager {
 
     // ---------- UTILITY ----------
     /**
-     * UTILITY: Deletes ALL records from the movie table.
+     * Deletes ALL records from the movie table in the database.
      */
     public void clearAll() {
         Connection con = JDBC.openConnection();

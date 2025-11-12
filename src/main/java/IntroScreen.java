@@ -5,8 +5,14 @@ import java.io.File; // Needed for path validation
 import java.sql.Connection; // Needed for connection test
 
 /**
- * IntroScreen - Simple, direct Welcome Screen for DMSGui.
- * Uses pure Swing graphics with a bold Marvel theme.
+ * The initial screen for the Marvel Movie DMS application.
+ * This class handles the critical initial setup, including prompting the user for the
+ * absolute path to the database file and testing the connection before launching the main GUI.
+ *
+ * <p>Role in System: Application Entry Point and Database Setup.</p>
+ *
+ * @author [Ramirez,Christopher]
+ * @version 1.0
  */
 public class IntroScreen extends JFrame {
 
@@ -18,6 +24,10 @@ public class IntroScreen extends JFrame {
     private static final Font SUBTITLE_FONT = new Font("Arial", Font.ITALIC, 16);
     private static final Font BUTTON_FONT = new Font("Dialog", Font.BOLD, 18);
 
+    /**
+     * Constructs the IntroScreen GUI, setting up the layout, colors, and the 'BEGIN ACCESS' button.
+     * The button's action relies on the database being successfully configured in the static main method.
+     */
     public IntroScreen() {
         setTitle("M.C.U. Data Access Terminal");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -65,9 +75,6 @@ public class IntroScreen extends JFrame {
 
         // Action Listener
         beginButton.addActionListener(e -> {
-            // NOTE: The database path MUST be set BEFORE this button is enabled/clicked.
-            // For now, we assume the static main() has already confirmed the setup.
-
             // 1. Dispose the intro screen
             dispose();
 
@@ -83,7 +90,13 @@ public class IntroScreen extends JFrame {
         add(southPanel, BorderLayout.SOUTH);
     }
 
-    // --- NEW STATIC MAIN METHOD TO HANDLE DATABASE SETUP ---
+    /**
+     * The application's entry point.
+     * This method contains the main application flow: database path prompting, file validation,
+     * connection testing via {@link JDBC}, and launching the main {@link IntroScreen} on success.
+     *
+     * @param args Command line arguments (not used).
+     */
     public static void main(String[] args) {
         String dbFilePath = null;
         boolean pathValidated = false;
@@ -119,23 +132,28 @@ public class IntroScreen extends JFrame {
             }
         }
 
-        // 3. Set the path in the JDBC helper
-        JDBC.setDatabasePath(dbFilePath);
+        try {
+            // 3. Set the path in the JDBC helper and load the driver
+            JDBC.setDatabasePath(dbFilePath);
 
-        // 4. Test the connection immediately for robustness
-        Connection con = JDBC.openConnection();
-        if (con != null) {
-            JDBC.closeConnection(con);
-            System.out.println("Database connection test successful.");
+            // 4. Test the connection immediately for robustness
+            Connection con = JDBC.openConnection();
+            if (con != null) {
+                JDBC.closeConnection(con);
+                System.out.println("Database connection test successful.");
 
-            // 5. If connection is successful, launch the UI thread
-            SwingUtilities.invokeLater(() -> {
-                IntroScreen intro = new IntroScreen();
-                intro.setVisible(true);
-            });
-        } else {
-            // Connection failed even with a valid file path (e.g., DB file is corrupt or driver issue)
-            JOptionPane.showMessageDialog(null, "FATAL: Could not establish a database connection after setup. Check your SQLite JAR or file permissions. Exiting.", "Connection Failure", JOptionPane.ERROR_MESSAGE);
+                // 5. If connection is successful, launch the UI thread
+                SwingUtilities.invokeLater(() -> {
+                    IntroScreen intro = new IntroScreen();
+                    intro.setVisible(true);
+                });
+            } else {
+                // Connection failed even with a valid file path (e.g., DB file is corrupt or locked)
+                JOptionPane.showMessageDialog(null, "FATAL: Could not establish a database connection after setup. Check your SQLite JAR or file permissions. Exiting.", "Connection Failure", JOptionPane.ERROR_MESSAGE);
+                System.exit(1);
+            }
+        } catch (ClassNotFoundException e) {
+            JOptionPane.showMessageDialog(null, "FATAL: SQLite JDBC Driver not found. Application cannot run. Exiting.", "Driver Missing", JOptionPane.ERROR_MESSAGE);
             System.exit(1);
         }
     }

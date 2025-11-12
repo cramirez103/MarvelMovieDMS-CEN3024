@@ -3,7 +3,24 @@ package DBHelper;
 import javax.swing.table.DefaultTableModel;
 import java.util.ArrayList;
 
+/**
+ * A standalone demonstration class used for testing the functionality of the {@code movies} database helper class
+ *.
+ *
+ * It performs a sequence of CRUD (Create, Read, Update, Delete) operations and specialized queries
+ * against the 'movies' table to verify the helper's stability and correctness. It also demonstrates
+ * the conversion of query results into a {@link DefaultTableModel}.
+ *
+ * @author [Ramirez,Christopher]
+ * @version 1.0
+ */
 public class MovieDatabaseDemo {
+    /**
+     * The main entry point for the database demonstration.
+     * Executes several database operations to test the 'movies' helper class.
+     *
+     * @param args Command line arguments (not used).
+     */
     public static void main(String[] args) {
 
         // Create an instance of the movies DBHelper
@@ -62,7 +79,12 @@ public class MovieDatabaseDemo {
         }
     }
 
-    // Helper method to print ArrayList<ArrayList<Object>> in table form
+    /**
+     * A utility method to print the contents of the database result set (an ArrayList of ArrayLists)
+     * in a simple, readable console format.
+     *
+     * @param data The 2D ArrayList containing the query results.
+     */
     private static void printDatabase(ArrayList<ArrayList<Object>> data) {
         for (ArrayList<Object> row : data) {
             for (Object obj : row) {

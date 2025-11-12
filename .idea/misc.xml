@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ExternalStorageConfigurationManager" enabled="true" />
+  <component name="JavadocGenerationManager">
+    <option name="OUTPUT_DIRECTORY" value="$USER_HOME$/ImportantIntelliJ/docs" />
+    <option name="OPTION_SCOPE" value="public" />
+    <option name="OTHER_OPTIONS" value="-encoding utf8 -charset utf8 -html5" />
+    <option name="LOCALE" value="en_US" />
+  </component>
   <component name="MavenProjectsManager">
     <option name="originalFiles">
       <list>

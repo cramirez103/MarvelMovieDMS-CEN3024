@@ -2,31 +2,45 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+/**
+ * Utility class responsible for managing the connection to the SQLite database.
+ * This class handles driver loading, creating the JDBC connection string, and providing
+ * reusable methods for opening and safely closing database connections.
+ *
+ * <p>Role in System: Provides the essential database access layer, used exclusively by the MovieManager.</p>
+ *
+ * @author [Ramirez,Christopher]
+ * @version 1.0
+ */
 public class JDBC {
 
     // Private static variable to hold the database file path (URL) once set.
     private static String dbPath;
 
-    // Private constructor to prevent instantiation, as this is a utility class
+    /**
+     * Private constructor to prevent instantiation, as this is a utility class
+     * containing only static methods.
+     */
     private JDBC() {
         // No implementation needed
     }
 
     /**
      * Loads the SQLite JDBC driver and sets the database file path.
-     * This method must be called once at application startup.
+     * This method must be called once at application startup to configure the database URL.
      * @param filePath The user-supplied absolute path to the SQLite database file.
+     * @throws ClassNotFoundException If the {@code org.sqlite.JDBC} driver is not found in the classpath.
      */
-    public static void setDatabasePath(String filePath) {
+    public static void setDatabasePath(String filePath) throws ClassNotFoundException {
         // 1. Load the SQLite JDBC Driver
         try {
             Class.forName("org.sqlite.JDBC");
             System.out.println("SQLite JDBC Driver loaded successfully.");
         } catch (ClassNotFoundException e) {
-            // This is critical. The program cannot run without the driver.
+            // Re-throw or handle the exception to alert the calling method (IntroScreen)
             System.err.println("FATAL: SQLite JDBC Driver not found in library path.");
             e.printStackTrace();
-            // Optional: Exit the application here if the driver is mandatory
+            throw e; // Re-throw the exception so IntroScreen can handle the failure.
         }
 
         // 2. Format the path into a proper JDBC connection string
@@ -35,8 +49,9 @@ public class JDBC {
     }
 
     /**
-     * Opens and returns a new connection to the database.
-     * @return A valid Connection object, or null if the connection fails.
+     * Opens and returns a new {@link java.sql.Connection} to the database.
+     * The database path must have been successfully set using {@link #setDatabasePath(String)}.
+     * @return A valid {@code Connection} object, or {@code null} if the connection fails due to a locked, missing, or corrupt database file.
      */
     public static Connection openConnection() {
         if (dbPath == null) {
@@ -59,8 +74,8 @@ public class JDBC {
     }
 
     /**
-     * Closes the provided database connection.
-     * @param connection The Connection object to be closed.
+     * Closes the provided database connection safely, suppressing any {@link java.sql.SQLException}.
+     * @param connection The {@code Connection} object to be closed.
      */
     public static void closeConnection(Connection connection) {
         if (connection != null) {

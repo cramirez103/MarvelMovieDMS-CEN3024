@@ -9,7 +9,15 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 
 /**
- * DMSGui - Swing GUI for MovieManager.
+ * The main Graphical User Interface (GUI) class for the Marvel Movie Data Management System.
+ * This class extends {@link JFrame} and is responsible for all visual presentation,
+ * user interaction handling, and client-side data validation.
+ *
+ * <p>Role in System: Presentation Layer (View and Controller for user interaction). It communicates
+ * exclusively with the {@link MovieManager} to modify the database.</p>
+ *
+ * @author [Ramirez,Christopher]
+ * @version 1.0
  */
 public class DMSGui extends JFrame {
     private final MovieManager manager;
@@ -41,6 +49,10 @@ public class DMSGui extends JFrame {
     // currently selected movie for editing
     private MarvelMovie movieBeingEdited = null;
 
+    /**
+     * Constructs the main application window.
+     * Initializes the {@link MovieManager}, sets up the JTable, builds the UI panels, and performs an initial table refresh.
+     */
     public DMSGui() {
         super("MARVEL CINEMATIC UNIVERSE DMS");
         this.manager = new MovieManager();
@@ -57,6 +69,8 @@ public class DMSGui extends JFrame {
             /**
              * Overrides getToolTipText to return the full cell content when the mouse hovers over it,
              * preventing long titles from being truncated with "...".
+             * @param e The mouse event that triggered the tooltip request.
+             * @return The full cell content string if the mouse is over a cell, otherwise null.
              */
             @Override
             public String getToolTipText(java.awt.event.MouseEvent e) {
@@ -110,6 +124,10 @@ public class DMSGui extends JFrame {
         refreshTable();
     }
 
+    /**
+     * Builds and returns the top panel containing the ADD/EDIT form and the CONTROLS/UPDATE areas.
+     * @return A JPanel containing all the input and control components.
+     */
     private JPanel buildTopPanel() {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         panel.setBackground(LIGHT_BG);
@@ -305,6 +323,10 @@ public class DMSGui extends JFrame {
         return panel;
     }
 
+    /**
+     * Builds and returns the bottom status bar panel.
+     * @return A JPanel containing informational text.
+     */
     private JPanel buildBottomPanel() {
         JPanel p = new JPanel(new BorderLayout());
         p.setBorder(BorderFactory.createEmptyBorder(6,6,6,6));
@@ -318,6 +340,10 @@ public class DMSGui extends JFrame {
 
     // ---------- Handlers (Functionality Unchanged) ----------
 
+    /**
+     * Handles the 'ADD NEW MOVIE' button click.
+     * It performs client-side validation, parses the input fields, and calls {@link MovieManager#addMovie(String, String, int, String, int, double)}.
+     */
     private void handleAdd() {
         // Primary check: if we are in edit mode, block the 'Add' function.
         if (movieBeingEdited != null) {
@@ -363,6 +389,10 @@ public class DMSGui extends JFrame {
         }
     }
 
+    /**
+     * Handles the 'BATCH LOAD (FILE)' button click.
+     * Prompts the user for a file path and calls the disabled {@link MovieManager#loadBatchData(String)}.
+     */
     private void handleBatchLoad() {
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle("Select movie data file (text)");
@@ -375,6 +405,10 @@ public class DMSGui extends JFrame {
         }
     }
 
+    /**
+     * Handles the 'DELETE SELECTED MOVIE' button click.
+     * Retrieves the title from the selected row in the JTable and calls {@link MovieManager#removeMovie(String)} after confirmation.
+     */
     private void handleDeleteSelected() {
         int sel = movieTable.getSelectedRow();
         if (sel < 0) { showError("Select a row to delete."); return; }
@@ -390,6 +424,11 @@ public class DMSGui extends JFrame {
         }
     }
 
+    /**
+     * Handles the 'FIND' button click in the update section.
+     * Searches the database for the title entered in {@code searchTitleField}, populates the input fields
+     * with the movie's data, and sets the {@code movieBeingEdited} flag.
+     */
     private void populateFieldsFromSearch() {
         String title = searchTitleField.getText().trim();
         if (title.isEmpty()) { showError("Enter a title to find."); return; }
@@ -411,6 +450,11 @@ public class DMSGui extends JFrame {
         showInfo("Movie found. Edit fields and click 'APPLY UPDATE' to save changes.");
     }
 
+    /**
+     * Handles the 'APPLY UPDATE' button click.
+     * This method only runs if a movie is currently being edited ({@code movieBeingEdited != null}).
+     * It validates the input and calls {@link MovieManager#updateMovieField(MarvelMovie, String, Object)} for each field that may have changed.
+     */
     private void handleUpdate() {
         if (movieBeingEdited == null) {
             showError("No movie selected for editing. Use Find first.");
@@ -432,6 +476,8 @@ public class DMSGui extends JFrame {
             int runtime = Integer.parseInt(runtimeField.getText().trim());
             double rating = Double.parseDouble(ratingField.getText().trim());
 
+            // Update individual fields by comparing current field value to the original movieBeingEdited object.
+            // If the manager returns false at any point, the chain short-circuits.
             boolean ok = manager.updateMovieField(movieBeingEdited, "title", title)
                     && manager.updateMovieField(movieBeingEdited, "releaseDate", date)
                     && manager.updateMovieField(movieBeingEdited, "phase", phase)
@@ -454,6 +500,12 @@ public class DMSGui extends JFrame {
 
     // ---------- VALIDATION UTILITY METHODS (RATING CHECK ALIGNED with 1.0) ----------
 
+    /**
+     * Checks if a string is a valid date format (YYYY-MM-DD) and falls within the acceptable year range (1900-2025).
+     *
+     * @param dateStr The date string from the input field.
+     * @return true if the format and range are correct, false otherwise.
+     */
     private boolean isValidDateFormat(String dateStr) {
         if (dateStr == null || dateStr.trim().isEmpty()) {
             return false;
@@ -471,6 +523,12 @@ public class DMSGui extends JFrame {
         }
     }
 
+    /**
+     * Performs comprehensive client-side validation on all six input fields.
+     * Checks for non-empty fields, correct data type formats (integer, double), and range constraints.
+     *
+     * @return A string containing concatenated error messages if validation fails, or an empty string if successful.
+     */
     private String validateInputFields() {
         StringBuilder errorMessages = new StringBuilder();
 
@@ -550,6 +608,10 @@ public class DMSGui extends JFrame {
 
     // ------------------------------------------------------------------
 
+    /**
+     * Displays a warning dialog to the user listing all validation errors.
+     * @param msg The concatenated string of error messages.
+     */
     private void showValidationErrors(String msg) {
         JOptionPane.showMessageDialog(
                 this,
@@ -559,6 +621,9 @@ public class DMSGui extends JFrame {
         );
     }
 
+    /**
+     * Clears the JTable and repopulates it with the current movie data fetched from the database via {@link MovieManager#getMovies()}.
+     */
     private void refreshTable() {
         // Clear all previous rows
         tableModel.setRowCount(0);
@@ -583,6 +648,9 @@ public class DMSGui extends JFrame {
         // If currentMovies is empty, the table is cleared, which is the correct behavior.
     }
 
+    /**
+     * Clears all data input fields and resets the {@code movieBeingEdited} flag.
+     */
     private void clearInputFields() {
         titleField.setText("");
         dateField.setText("");
@@ -594,12 +662,19 @@ public class DMSGui extends JFrame {
         movieBeingEdited = null;
     }
 
+    /**
+     * Displays a generic error dialog box to the user.
+     * @param msg The error message to display.
+     */
     private void showError(String msg) {
         JOptionPane.showMessageDialog(this, msg, "ERROR: MCU DATA FAILURE", JOptionPane.ERROR_MESSAGE);
     }
 
+    /**
+     * Displays a generic information dialog box to the user.
+     * @param msg The information message to display.
+     */
     private void showInfo(String msg) {
         JOptionPane.showMessageDialog(this, msg, "MCU DATA SUCCESS", JOptionPane.INFORMATION_MESSAGE);
     }
-
 }

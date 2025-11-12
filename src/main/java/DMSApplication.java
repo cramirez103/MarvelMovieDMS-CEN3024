@@ -3,20 +3,33 @@ import java.util.List;
 import java.util.Scanner;
 
 /**
- * DMSApplication.java
- * Main application class handling CLI and user interaction.
- * Added proper validation for release date and running time.
+ * The original Command Line Interface (CLI) driver for the Marvel Movie Data Management System (DMS).
+ * This class handles all console-based user interaction and validation for the CRUD operations.
+ *
+ * <p>Note: This CLI interface is superseded by the graphical {@link IntroScreen} and {@link DMSGui} flow
+ * in the final database-enabled application, but is maintained here for legacy CLI functionality.</p>
+ *
+ * @author [Ramirez,Christopher]
+ * @version 1.0
  */
 public class DMSApplication {
 
     private final MovieManager manager;
     private final Scanner scanner;
 
+    /**
+     * Constructs the DMSApplication, initializing the {@link MovieManager} to interface with the database
+     * and a {@link Scanner} for console input.
+     */
     public DMSApplication() {
         this.manager = new MovieManager();
         this.scanner = new Scanner(System.in);
     }
 
+    /**
+     * Starts the main CLI loop of the application.
+     * Continuously displays the menu and processes user input until the user chooses to exit (Option 0).
+     */
     public void run() {
         System.out.println("\n--- Marvel Movie DMS (Phase 3 CLI) Started ---");
         System.out.println("System is currently empty. Please use Option 2 or 3 to load data.");
@@ -42,6 +55,9 @@ public class DMSApplication {
         scanner.close();
     }
 
+    /**
+     * Prints the main menu options to the console.
+     */
     private void displayMenu() {
         System.out.println("\n--- Marvel Movie DMS Menu ---");
         System.out.println("1. Display All Data (Read)");
@@ -55,6 +71,14 @@ public class DMSApplication {
 
     // ------------------ Input Validation Helpers ------------------
 
+    /**
+     * Prompts the user for integer input and validates it against a minimum and maximum range.
+     *
+     * @param prompt The message to display to the user.
+     * @param min The minimum acceptable integer value (inclusive).
+     * @param max The maximum acceptable integer value (inclusive), or -1 if no maximum is required.
+     * @return The validated integer input from the user.
+     */
     private int getValidatedIntInput(String prompt, int min, int max) {
         while (true) {
             System.out.print(prompt);
@@ -72,6 +96,14 @@ public class DMSApplication {
         }
     }
 
+    /**
+     * Prompts the user for double input and validates it against a minimum and maximum range.
+     *
+     * @param prompt The message to display to the user.
+     * @param min The minimum acceptable double value (inclusive).
+     * @param max The maximum acceptable double value (inclusive).
+     * @return The validated double input from the user.
+     */
     private double getValidatedDoubleInput(String prompt, double min, double max) {
         while (true) {
             System.out.print(prompt);
@@ -89,6 +121,12 @@ public class DMSApplication {
         }
     }
 
+    /**
+     * Prompts the user for string input and ensures the input is not empty.
+     *
+     * @param prompt The message to display to the user.
+     * @return The validated, non-empty string input from the user.
+     */
     private String getValidatedStringInput(String prompt) {
         while (true) {
             System.out.print(prompt);
@@ -100,6 +138,12 @@ public class DMSApplication {
 
     // ------------------ Custom Validation Methods ------------------
 
+    /**
+     * Validates that a date string is in YYYY-MM-DD format, represents a real date, and falls within the 1900-2025 year range.
+     *
+     * @param dateStr The date string to validate.
+     * @return true if the date is valid, false otherwise.
+     */
     private boolean isValidReleaseDate(String dateStr) {
         if (dateStr == null || !dateStr.matches("\\d{4}-\\d{2}-\\d{2}")) return false;
 
@@ -119,12 +163,21 @@ public class DMSApplication {
         return day >= 1 && day <= daysInMonth[month - 1];
     }
 
+    /**
+     * Validates that the running time in minutes is between 30 and 300 minutes, inclusive.
+     *
+     * @param minutes The running time to validate.
+     * @return true if the runtime is within the valid range, false otherwise.
+     */
     private boolean isValidRunningTime(int minutes) {
         return minutes >= 30 && minutes <= 300; // 30 minutes to 5 hours max
     }
 
     // ------------------ CRUD and Custom Actions ------------------
 
+    /**
+     * Prompts the user for all movie details and attempts to create a new movie record via {@link MovieManager#addMovie(String, String, int, String, int, double)}.
+     */
     private void manualCreate() {
         System.out.println("\n--- Enter New Movie Details ---");
 
@@ -154,6 +207,9 @@ public class DMSApplication {
         }
     }
 
+    /**
+     * Retrieves all movies from the database via {@link MovieManager#getMovies()} and prints them to the console.
+     */
     private void displayData() {
         List<MarvelMovie> movies = manager.getMovies();
         System.out.println("\n--- Current Data Set (Total: " + movies.size() + " Records) ---");
@@ -167,6 +223,9 @@ public class DMSApplication {
         }
     }
 
+    /**
+     * Prompts the user for a movie title and calls {@link MovieManager#removeMovie(String)} to delete the record.
+     */
     private void removeRecord() {
         String title = getValidatedStringInput("Enter the title of the movie to remove: ");
         if (manager.removeMovie(title)) {
@@ -176,6 +235,9 @@ public class DMSApplication {
         }
     }
 
+    /**
+     * Prompts the user for a movie title to find, then guides the user to select and update a single field using {@link MovieManager#updateMovieField(MarvelMovie, String, Object)}.
+     */
     private void updateRecord() {
         String title = getValidatedStringInput("Enter the title of the movie to update: ");
         MarvelMovie movie = manager.findMovieByTitle(title);
@@ -221,6 +283,10 @@ public class DMSApplication {
         }
     }
 
+    /**
+     * Runs the custom action by prompting for a phase number and calculating the average IMDb rating for that phase
+     * via {@link MovieManager#calculateAverageRating(int)}.
+     */
     private void runCustomAction() {
         int phase = getValidatedIntInput("Enter MCU Phase number to analyze: ", 1, -1);
         double average = manager.calculateAverageRating(phase);
@@ -231,6 +297,9 @@ public class DMSApplication {
         }
     }
 
+    /**
+     * Prompts the user for a file path and calls the batch load function in the MovieManager.
+     */
     private void loadBatchDataFromPath() {
         System.out.print("Enter full path for batch data file: ");
         String path = scanner.nextLine().trim();
@@ -241,6 +310,10 @@ public class DMSApplication {
         System.out.println(manager.loadBatchData(path));
     }
 
+    /**
+     * The main entry point for the CLI application.
+     * @param args Command line arguments (not used).
+     */
     public static void main(String[] args) {
         new DMSApplication().run();
 
